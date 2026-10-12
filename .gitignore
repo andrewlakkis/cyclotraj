@@ -1,0 +1,28 @@
+# R
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+.Rapp.history
+
+# R package build artifacts
+*.tar.gz
+*.Rcheck/
+cyclotraj/src/*.o
+cyclotraj/src/*.so
+cyclotraj/src/*.dll
+cyclotraj/inst/doc/
+
+# generated output
+outputs/
+
+# Shiny deploy
+rsconnect/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/

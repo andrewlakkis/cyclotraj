@@ -1,0 +1,130 @@
+---
+title: "Testing treatment effects on clone trajectories with cyclotraj"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Testing treatment effects on clone trajectories with cyclotraj}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.5)
+```
+
+## Overview
+
+`cyclotraj` tests whether treatment groups differ in how repeatedly-measured
+units change over time, when each observation is a count out of a
+sample-specific total. Counts are modeled with binomial generalized linear
+mixed-effects models (logit link), in two parameterizations of time that are
+read together:
+
+* a **continuous-time** (linear-slope) model, for each treatment's overall rate
+  of expansion or contraction, and
+* a **difference-in-differences** (categorical-time) model, for
+  timepoint-specific treatment effects with no linearity assumption.
+
+Random intercepts for unit and subject absorb the nested, repeated-measures
+structure. The package replaces marginal Wilcoxon testing with model-based
+inference, and nothing in it is domain specific: any nested longitudinal count
+data has this structure. The function and argument names keep the vocabulary of
+the motivating application, where the repeated-measures unit is a T-cell clone
+(`clone`) and the subject it is nested in is a patient (`patient`).
+
+The example data used throughout this vignette are **synthetic**, simulated
+from the model above by `data-raw/make_example_data.R`. Six trajectory groups
+are generated with deliberately different shapes, so the two time encodings
+agree in some groups and disagree in others.
+
+## Workflow
+
+```{r setup}
+library(cyclotraj)
+```
+
+### 1. Prepare the data
+
+`prepare_clone_data()` validates and standardizes a long-format table. Column
+names are mapped through arguments, so data with any column naming works.
+
+```{r prep}
+raw <- read_example_data()          # bundled synthetic example
+d <- prepare_clone_data(raw, treatment_ref = "arm_A")
+levels(d$treatment)                 # reference arm first
+table(d$trajectory)
+```
+
+### 2. Run the analysis
+
+`run_clone_analysis()` fits both models to every trajectory and computes the
+inference and diagnostics.
+
+```{r run, message = FALSE, warning = FALSE}
+res <- run_clone_analysis(raw, treatment_ref = "arm_A")
+res
+```
+
+`results_table()` collates the joint Wald tests (does each treatment alter each
+trajectory at all?):
+
+```{r results}
+head(results_table(res), 8)
+```
+
+### 3. Inspect one trajectory
+
+Trajectory 5 is simulated with a sustained `arm_D` slope effect, so both time
+encodings should find it.
+
+```{r one}
+tr <- res$trajectories[["Traj 5"]]
+tr$joint_wald$continuous
+subset(tr$slopes, select = c("contrast", "estimate", "p.value"))
+```
+
+### 4. When the two time encodings disagree
+
+Trajectory 3 gives `arm_D` a transient one-timepoint spike at week 3 instead of
+a sustained trend. A single slope has to average that spike over the whole
+follow-up, so the continuous-time omnibus test barely clears the conventional
+threshold, while the difference-in-differences test, which is free to place the
+effect at one timepoint, is emphatic. Reading the two together is what locates
+the effect in time.
+
+```{r disagree}
+rt <- results_table(res)
+rt[rt$trajectory == "Traj 3" & rt$treatment == "arm_D", ]
+```
+
+The post-hoc contrasts say where it sits. Of the six interval contrasts
+comparing `arm_A` with `arm_D`, the three that involve week 3 are the
+significant ones and the three that do not are nowhere near significance, which
+is the signature of a one-timepoint spike rather than a trend. Estimates are on
+the log odds ratio scale.
+
+```{r disagree-posthoc}
+dc <- res$trajectories[["Traj 3"]]$did_contrasts
+dc <- dc[dc$treatments == "arm_A - arm_D", c("timepoints", "estimate", "p.value")]
+dc[order(dc$p.value), ]
+```
+
+### 5. Plot with confidence bands
+
+```{r plot, message = FALSE, warning = FALSE}
+sub <- d[d$trajectory == "Traj 5", ]
+plot_trajectory(sub, tr$continuous, title = "Traj 5: continuous-time fit")
+```
+
+## Using your own data
+
+Map your columns and (optionally) omit the trajectory argument to treat the data
+as a single group:
+
+```{r generic, eval = FALSE}
+res <- run_clone_analysis(
+  my_data,
+  clone = "lineage_id", patient = "subject", treatment = "arm",
+  timepoint = "week", count = "reads", total = "library_size",
+  trajectory = NULL, treatment_ref = "control"
+)
+```

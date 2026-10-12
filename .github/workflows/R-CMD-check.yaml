@@ -1,0 +1,64 @@
+name: R-CMD-check
+
+# The package lives in the cyclotraj/ subdirectory, so every step that needs to
+# see DESCRIPTION passes working-directory: cyclotraj. Steps that act on the
+# repository as a whole (checkout, regenerating data-raw/) run at the root.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  R-CMD-check:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+
+      # Installs Imports plus Suggests (testthat, knitr, rmarkdown), and pandoc,
+      # which this action installs automatically when the package suggests
+      # rmarkdown; the vignette cannot be built without it.
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          working-directory: cyclotraj
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - uses: r-lib/actions/check-r-package@v2
+        with:
+          working-directory: cyclotraj
+          upload-snapshots: true
+          args: 'c("--no-manual", "--as-cran")'
+
+  example-data:
+    # The bundled example data is generated, not collected, and the tests assert
+    # recovery of the parameters it was simulated from. Both only mean something
+    # if the committed CSV is still what the generator produces, so regenerate it
+    # and compare. Needs base R only.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+
+      - name: Regenerate the example data and compare with the committed copy
+        run: |
+          cp cyclotraj/inst/extdata/example_trajectories.csv "$RUNNER_TEMP/committed.csv"
+          Rscript data-raw/make_example_data.R
+          Rscript -e 'committed <- read.csv(file.path(Sys.getenv("RUNNER_TEMP"), "committed.csv")); regenerated <- read.csv("cyclotraj/inst/extdata/example_trajectories.csv"); cmp <- all.equal(committed, regenerated); if (!isTRUE(cmp)) stop("data-raw/make_example_data.R no longer reproduces the committed example data: ", paste(cmp, collapse = "; ")); cat("example data reproduced from its generator\n")'

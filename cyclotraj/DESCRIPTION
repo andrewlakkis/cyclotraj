@@ -1,0 +1,41 @@
+Package: cyclotraj
+Title: Mixed-Model Testing of Treatment Effects on Longitudinal Count Trajectories
+Version: 0.1.0
+Authors@R:
+    person("Andrew", "Lakkis", email = "Andrew.Lakkis@pennmedicine.upenn.edu",
+           role = c("aut", "cre"))
+Description: A reusable framework for testing treatment-group differences in
+    nested longitudinal count data: units measured repeatedly within subjects,
+    where subjects are assigned to treatment groups and each observation is a
+    count out of a sample-specific total. Counts are modeled with binomial
+    generalized linear mixed-effects models (logit link) in two
+    parameterizations of time that are read together: a continuous-time
+    (linear-slope) model for sustained trends, and a difference-in-differences
+    (categorical-time) model for timepoint-specific effects with no linearity
+    assumption. Random intercepts for unit and subject handle the nested,
+    repeated-measures structure. The package provides data preparation, model
+    fitting, multi-degree-of-freedom joint Wald tests, multiplicity-controlled
+    post-hoc contrasts on the log-odds scale that exponentiate to odds ratios,
+    model diagnostics, figures with confidence bands, and tidy results tables. The motivating application is
+    longitudinal T-cell clone tracking during cancer immunotherapy, but the
+    method depends only on the data structure.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Language: en-US
+Depends: R (>= 4.1)
+Imports:
+    lme4,
+    emmeans,
+    car,
+    ggplot2,
+    stats,
+    utils
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+Config/testthat/edition: 3
+RoxygenNote: 7.3.3
+VignetteBuilder: knitr
+URL: https://github.com/andrewlakkis/cyclotraj
+BugReports: https://github.com/andrewlakkis/cyclotraj/issues
