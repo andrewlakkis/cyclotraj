@@ -1,5 +1,8 @@
 # cyclotraj
 
+[![R-CMD-check](https://github.com/andrewlakkis/cyclotraj/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/andrewlakkis/cyclotraj/actions/workflows/R-CMD-check.yaml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **Mixed-model testing of treatment effects on longitudinal count trajectories.**
 
 `cyclotraj` is an R package for a specific, recurring inference problem: you have
