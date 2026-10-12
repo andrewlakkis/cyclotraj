@@ -163,6 +163,18 @@ install.packages(c("shiny", "bslib", "reactable", "fontawesome", "patchwork"))
 shiny::runApp("shiny_app")
 ```
 
+![Overview tab: value boxes and the cross-group joint-Wald heatmap](docs/img/app-overview.png)
+
+The overview answers "which arms moved which groups" in one grid: each cell is a
+joint Wald test of one arm against the reference, shaded by significance, with a
+toggle between the two time encodings.
+
+![Explore tab: both model fits side by side with confidence bands](docs/img/app-explore.png)
+
+Opening a group shows the two fits side by side over the observed unit
+trajectories, with the effect sizes, omnibus tests, contrasts, marginal means and
+diagnostics behind each heatmap cell on their own tabs.
+
 Tabs: an overview with a cross-group omnibus-test heatmap (continuous/DiD
 toggle); a forest plot of one arm's effect across all groups; a per-group view
 with both model fits, confidence bands, a slope-contrast forest plot, marginal
