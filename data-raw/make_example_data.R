@@ -47,6 +47,7 @@ set.seed(20270601, kind = "Mersenne-Twister",
 
 ARMS   <- c(arm_A = 4L, arm_B = 4L, arm_C = 7L, arm_D = 3L)   # ref arm first
 WEEKS  <- c(0, 3, 6, 9)
+MIN_UNITS_PER_ARM <- 6L   # floor per arm per group; smallest group has 29
 NUNITS <- c("Traj 1" = 111L, "Traj 2" = 29L, "Traj 3" = 104L,
             "Traj 4" = 104L, "Traj 5" = 64L, "Traj 6" = 88L)
 
@@ -91,9 +92,20 @@ uid  <- 0L
 
 for (k in names(NUNITS)) {
   s <- spec[[k]]
-  ## assign units to subjects at random, so each unit sits in exactly one
-  ## subject (and therefore inherits exactly one arm), as in real clone data
-  owner <- sample(subjects$patient_alias, NUNITS[[k]], replace = TRUE)
+  ## Assign units to subjects, so each unit sits in exactly one subject (and
+  ## therefore inherits exactly one arm), as in real clone data. Units are
+  ## allocated per arm -- a floor of MIN_UNITS_PER_ARM, then the remainder split
+  ## in proportion to arm size -- rather than by sampling subjects uniformly.
+  ## Uniform sampling left the smallest arm with 2 units in the smallest group,
+  ## whose counts reached zero at the last two timepoints; the categorical-time
+  ## model then has no events to estimate those interactions from and separates.
+  base    <- stats::setNames(rep(MIN_UNITS_PER_ARM, length(ARMS)), names(ARMS))
+  rest    <- NUNITS[[k]] - sum(base)
+  extra   <- diff(c(0, round(cumsum(ARMS / sum(ARMS)) * rest)))
+  per_arm <- base + extra
+  owner <- unlist(lapply(names(ARMS), function(a)
+    sample(subjects$patient_alias[subjects$treatment == a], per_arm[[a]],
+           replace = TRUE)))
 
   for (i in seq_len(NUNITS[[k]])) {
     uid <- uid + 1L

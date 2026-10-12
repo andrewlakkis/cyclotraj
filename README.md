@@ -114,13 +114,15 @@ tr$slopes                         # Tukey-adjusted pairwise slope contrasts
 
 The example is simulated so the two time encodings disagree somewhere, because
 that disagreement is the point. In group `Traj 3`, `arm_D` is given a transient
-one-timepoint spike at week 3. The difference-in-differences model finds it
-easily; the continuous-time model, which has to express it as a slope, nearly
-misses it:
+one-timepoint spike at week 3. The difference-in-differences model, which
+estimates each timepoint separately, localizes it decisively. The continuous-time
+model has to express the same effect as a slope, which averages a one-timepoint
+spike over the whole follow-up, so it registers the effect far more weakly on the
+same data:
 
 ```
-Traj 3   continuous   arm_D    chisq =  6.0    P = 0.0497
-Traj 3   did          arm_D    chisq = 61.8    P = 1.2e-12
+Traj 3   continuous   arm_D    chisq = 12.0    P = 0.0025
+Traj 3   did          arm_D    chisq = 62.9    P = 7.3e-13
 ```
 
 Group `Traj 2` is simulated with no treatment effect at all, and nothing in it

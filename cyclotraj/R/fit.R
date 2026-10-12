@@ -136,12 +136,21 @@ glmm_diagnostics <- function(model) {
     v <- vc$sdcor[vc$grp == grp & is.na(vc$var2)]
     if (length(v)) v[1] else NA_real_
   }
+  ## lme4 files the benign "boundary (singular) fit" note in the same slot as
+  ## real optimizer failures. A singular fit means a variance component was
+  ## estimated at zero, which is expected here (treatment is assigned at the
+  ## subject level, so the subject variance is often zero) and is reported on
+  ## its own by `singular`. Counting it as non-convergence would flag 10 of 12
+  ## fits on the melanoma data, all of which converged, so it is excluded:
+  ## `singular = TRUE, converged = FALSE` is benign, and
+  ## `singular = FALSE, converged = FALSE` is the combination to worry about.
   warns <- model@optinfo$conv$lme4$messages
+  real <- warns[!grepl("boundary (singular) fit", warns, fixed = TRUE)]
   data.frame(
     n_obs = stats::nobs(model),
     singular = lme4::isSingular(model),
-    converged = is.null(warns),
-    message = if (is.null(warns)) "" else paste(warns, collapse = "; "),
+    converged = !length(real),
+    message = paste(real, collapse = "; "),
     sd_clone = sd_of("clone_id"),
     sd_patient = sd_of("patient_id"),
     stringsAsFactors = FALSE
